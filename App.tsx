@@ -1,118 +1,124 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import {StyleSheet, Text, View,  SafeAreaView as SafeAreaIOS, Platform, Alert, TouchableOpacity} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {SafeAreaView} from 'react-native-safe-area-context';
+const characters: string[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const App = () => {
+  const [cards, setCards] = useState<string[]>([]);
+  const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
+  const [attempts, setAttempts] = useState<number>(0);
+  const [matches, setMatches] = useState<number>(0);
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+  useEffect(() => {
+    restartGame();
+  }, []);
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const restartGame = (): void => {
+    const shuffledCards = characters.sort(() => Math.random() - 0.5);
+    setCards([...shuffledCards, ...shuffledCards]);
+    setFlippedIndices([]);
+    setAttempts(0);
+    setMatches(0);
   };
 
+  const handleCardPress = (value: string, index: number): void => {
+    if (flippedIndices.length === 2 || flippedIndices.includes(index)) {
+      return;
+    }
+
+    setFlippedIndices([...flippedIndices, index]);
+
+    if (flippedIndices.length === 1) {
+      const [firstIndex] = flippedIndices;
+      const firstCard = cards[firstIndex];
+      if (firstCard === value) {
+        setMatches(matches + 1);
+        setFlippedIndices([]);
+      } else {
+        setTimeout(() => {
+          setFlippedIndices([]);
+        }, 1000);
+      }
+      setAttempts(attempts + 1);
+    }
+
+    if (matches === characters.length - 1) {
+      Alert.alert('Congratulations!', 'You have completed the game!', [{ text: 'Restart', onPress: restartGame }]);
+    }
+  };
+
+  const SafeArea = Platform.OS === 'ios' ? SafeAreaIOS : SafeAreaView;
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+    <SafeArea style={{flex: 1}}>
+    <View style={styles.container}>
+      <Text style={styles.headerText}>Memory Game</Text>
+      <Text style={styles.infoText}>Attempts: {attempts} | Matches: {matches}</Text>
+      <View style={styles.board}>
+        {[0, 1, 2, 3].map((rowIndex) => (
+          <View key={rowIndex} style={styles.row}>
+            {[0, 1, 2, 3].map((colIndex) => {
+              const index = rowIndex * 4 + colIndex;
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.card,
+                    { backgroundColor: flippedIndices.includes(index) ? 'green' : 'blue' },
+                  ]}
+                  onPress={() => handleCardPress(cards[index], index)}
+                  disabled={flippedIndices.includes(index) || matches === characters.length - 1}
+                >
+                  {flippedIndices.includes(index) && <Text style={styles.cardText}>{cards[index]}</Text>}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    </View>
+    </SafeArea>
+  )
 }
 
+export default App
+
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionTitle: {
+  headerText: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: 'black'
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  infoText: {
+    fontSize: 16,
+    marginBottom: 10,
+    color: 'black'
   },
-  highlight: {
-    fontWeight: '700',
+  board: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignContent: 'center',
+    padding: 10,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  card: {
+    width: 70,
+    height: 70,
+    margin: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardText: {
+    fontSize: 24,
+    color: 'white',
   },
 });
-
-export default App;

@@ -48,6 +48,7 @@ const App = () => {
   };
 
   const SafeArea = Platform.OS === 'ios' ? SafeAreaIOS : SafeAreaView;
+  
   return (
     <SafeArea style={{flex: 1}}>
     <View style={styles.container}>
